@@ -48,7 +48,7 @@ var Cache = Events.extend({
     constructor: function (options) {
         var the = this;
 
-        the.Super();
+        Cache.parent(the);
         the[_options] = options = object.assign(true, {}, defaults, options);
         the[_storageType] = STORAGE[options.storage];
 
