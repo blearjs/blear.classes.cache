@@ -1,5 +1,5 @@
 /**
- * 缓存，支持的存储器有 local/session/memory
+ * 同步缓存
  * @author ydr.me
  * @create 2016-05-06 01:59
  */
@@ -8,33 +8,43 @@
 
 'use strict';
 
-var Events =   require('blear.classes.events');
-var object =   require('blear.utils.object');
-var array =    require('blear.utils.array');
-var typeis =   require('blear.utils.typeis');
-var number =   require('blear.utils.number');
-var string =   require('blear.utils.string');
-var ls =       require('blear.core.local-storage');
-var ss =       require('blear.core.session-storage');
+var Events = require('blear.classes.events');
+var object = require('blear.utils.object');
+var array = require('blear.utils.array');
+var typeis = require('blear.utils.typeis');
+var number = require('blear.utils.number');
+var string = require('blear.utils.string');
 
 var namespace = 'øclasses/cache:';
 var DATE_1970 = new Date(0);
-var STORAGE_LOCAL = 1;
-var STORAGE_SESSION = 2;
-var STORAGE_MEMORY = 3;
-var STORAGE = {
-    local: STORAGE_LOCAL,
-    session: STORAGE_SESSION,
-    memory: STORAGE_MEMORY
-};
 var cacheId = 0;
 var memoryStorage = Object.create(null);
+var memory = {
+    get: function (key) {
+        return memoryStorage[key];
+    },
+    set: function (key, val) {
+        memoryStorage[key] = val;
+    },
+    remove: function (key) {
+        delete memoryStorage[key];
+    },
+    keys: function () {
+        return object.keys(memoryStorage);
+    }
+};
 var defaults = {
     /**
-     * 存储器，支持的有 local/session/memory
-     * @type String
+     * 存储器，默认为内存，存储器必须支持以下实例方法
+     * - `.get(key)`
+     * - `.set(key)`
+     * - `.remove(key)`
+     * - `.clear(key)`
+     * - `.keys()`
+     * - `.size()`
+     * @type Object
      */
-    storage: 'local',
+    storage: null,
 
     /**
      * 有效期，可以是毫秒数，也可以是一个日期对象，默认 1 天
@@ -50,12 +60,7 @@ var Cache = Events.extend({
 
         Cache.parent(the);
         the[_options] = options = object.assign(true, {}, defaults, options);
-        the[_storageType] = STORAGE[options.storage];
-
-        if (!the[_storageType]) {
-            throw new TypeError('未明确的存储类型：' + options.storage);
-        }
-
+        the[_storage] = options.storage || memory;
         the[_prefix] = namespace + (cacheId++) + '/';
         the[_rePrefix] = new RegExp('^' + string.escapeRegExp(the[_prefix]));
     },
@@ -66,14 +71,15 @@ var Cache = Events.extend({
      * @param key
      * @param val
      * @param [options]
-     * @returns {*}
+     * @param [callback]
+     * @returns {Cache}
      */
-    set: function (key, val, options) {
+    set: function (key, val, options, callback) {
         var the = this;
 
-        the[_setKeyVal](key, val, options);
+        the[_setKeyVal](key, val, options, callback);
 
-        return val;
+        return the;
     },
 
 
@@ -82,17 +88,21 @@ var Cache = Events.extend({
      * @param key
      * @param val
      * @param [options]
-     * @returns {*}
+     * @param [callback]
+     * @returns {Cache}
      */
-    ensure: function (key, val, options) {
+    ensure: function (key, val, options, callback) {
         var the = this;
-        var old = the[_getDataByKey](key);
 
-        if (old) {
-            return old.val;
-        }
+        the[_getDataByKey](key, function (err, val) {
+            if (err || !val) {
+                return the.set(key, val, options, callback);
+            }
 
-        return the.set(key, val, options);
+            return callback(val);
+        });
+
+        return the;
     },
 
 
@@ -203,7 +213,7 @@ var Cache = Events.extend({
     }
 });
 var _options = Cache.sole();
-var _storageType = Cache.sole();
+var _storage = Cache.sole();
 var _prefix = Cache.sole();
 var _rePrefix = Cache.sole();
 var _setKeyVal = Cache.sole();
@@ -239,19 +249,7 @@ pro[_setKeyVal] = function (key, val, options) {
     };
     var storageKey = the[_prefix] + key;
 
-    switch (the[_storageType]) {
-        case STORAGE_LOCAL:
-            ls.setJSON(storageKey, data);
-            break;
-
-        case STORAGE_SESSION:
-            ss.setJSON(storageKey, data);
-            break;
-
-        case STORAGE_MEMORY:
-            memoryStorage[storageKey] = data;
-            break;
-    }
+    the[_storage].set(storageKey, data);
 };
 
 
@@ -265,19 +263,7 @@ pro[_getDataByKey] = function (key) {
     var storageKey = the[_prefix] + key;
     var data;
 
-    switch (the[_storageType]) {
-        case STORAGE_LOCAL:
-            data = ls.getJSON(storageKey);
-            break;
-
-        case STORAGE_SESSION:
-            data = ss.getJSON(storageKey);
-            break;
-
-        case STORAGE_MEMORY:
-            data = memoryStorage[storageKey];
-            break;
-    }
+    data = the[_storage].get(storageKey);
 
     if (!data) {
         return null;
@@ -301,16 +287,7 @@ pro[_removeDataByKey] = function (key) {
     var the = this;
     var storageKey = the[_prefix] + key;
 
-    switch (the[_storageType]) {
-        case STORAGE_LOCAL:
-            return ls.remove(storageKey);
-
-        case STORAGE_SESSION:
-            return ss.remove(storageKey);
-
-        case STORAGE_MEMORY:
-            return delete memoryStorage[storageKey];
-    }
+    the[_storage].remove(storageKey);
 };
 
 
@@ -332,21 +309,7 @@ pro[_removeDataByKeys] = function (keys) {
  */
 pro[_getKeys] = function () {
     var the = this;
-    var keys;
-
-    switch (the[_storageType]) {
-        case STORAGE_LOCAL:
-            keys = ls.keys();
-            break;
-
-        case STORAGE_SESSION:
-            keys = ss.keys();
-            break;
-
-        case STORAGE_MEMORY:
-            keys = object.keys(memoryStorage);
-            break;
-    }
+    var keys = the[_storage].keys();
 
     keys = array.filter(keys, function (key) {
         return the[_rePrefix].test(key);

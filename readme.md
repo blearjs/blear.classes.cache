@@ -13,3 +13,12 @@
 [coveralls-img]: https://img.shields.io/coveralls/blearjs/blear.classes.cache/master.svg?maxAge=2592000&style=flat-square
 [coveralls-url]: https://coveralls.io/github/blearjs/blear.classes.cache?branch=master
 
+
+存储器，默认为内存，存储器必须支持以下实例方法
+
+- `.get(key)`
+- `.set(key)`
+- `.remove(key)`
+- `.clear(key)`
+- `.keys()`
+- `.size()`
