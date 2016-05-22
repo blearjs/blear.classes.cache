@@ -71,13 +71,12 @@ var Cache = Events.extend({
      * @param key
      * @param val
      * @param [options]
-     * @param [callback]
      * @returns {Cache}
      */
-    set: function (key, val, options, callback) {
+    set: function (key, val, options) {
         var the = this;
 
-        the[_setKeyVal](key, val, options, callback);
+        the[_setKeyVal](key, val, options);
 
         return the;
     },
@@ -88,21 +87,17 @@ var Cache = Events.extend({
      * @param key
      * @param val
      * @param [options]
-     * @param [callback]
      * @returns {Cache}
      */
-    ensure: function (key, val, options, callback) {
+    ensure: function (key, val, options) {
         var the = this;
+        var old = the[_getDataByKey](key);
 
-        the[_getDataByKey](key, function (err, val) {
-            if (err || !val) {
-                return the.set(key, val, options, callback);
-            }
+        if (old) {
+            return old.val;
+        }
 
-            return callback(val);
-        });
-
-        return the;
+        return the.set(key, val, options);
     },
 
 
