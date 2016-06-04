@@ -70,13 +70,13 @@ var Cache = Events.extend({
      * 设置值
      * @param key
      * @param val
-     * @param [options]
+     * @param [expires]
      * @returns {Cache}
      */
-    set: function (key, val, options) {
+    set: function (key, val, expires) {
         var the = this;
 
-        the[_setKeyVal](key, val, options);
+        the[_setKeyVal](key, val, expires);
 
         return the;
     },
@@ -86,10 +86,10 @@ var Cache = Events.extend({
      * 确保有值
      * @param key
      * @param val
-     * @param [options]
+     * @param [expires]
      * @returns {Cache}
      */
-    ensure: function (key, val, options) {
+    ensure: function (key, val, expires) {
         var the = this;
         var old = the[_getDataByKey](key);
 
@@ -97,7 +97,7 @@ var Cache = Events.extend({
             return old.val;
         }
 
-        return the.set(key, val, options);
+        return the.set(key, val, expires);
     },
 
 
@@ -105,10 +105,10 @@ var Cache = Events.extend({
      * 如果有则替换值
      * @param key
      * @param val
-     * @param options
+     * @param [expires]
      * @returns {*}
      */
-    replace: function (key, val, options) {
+    replace: function (key, val, expires) {
         var the = this;
         var old = the[_getDataByKey](key);
 
@@ -116,7 +116,7 @@ var Cache = Events.extend({
             return null;
         }
 
-        return the.set(key, val, options);
+        return the.set(key, val, expires);
     },
 
 
@@ -223,13 +223,15 @@ var pro = Cache.prototype;
  * 设置 key、val
  * @param key
  * @param val
- * @param [options]
+ * @param [expires]
  */
-pro[_setKeyVal] = function (key, val, options) {
+pro[_setKeyVal] = function (key, val, expires) {
     var the = this;
     var exp;
 
-    options = object.assign(true, {}, the[_options], options);
+    var options = object.assign(true, {}, the[_options], {
+        expires: expires
+    });
 
     if (typeis.Date(options.expires)) {
         exp = options.expires;
