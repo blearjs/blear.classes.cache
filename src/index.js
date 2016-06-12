@@ -17,7 +17,6 @@ var string = require('blear.utils.string');
 
 var namespace = 'øclasses/cache:';
 var DATE_1970 = new Date(0);
-var cacheId = 0;
 var memoryStorage = Object.create(null);
 var memory = {
     get: function (key) {
@@ -34,6 +33,12 @@ var memory = {
     }
 };
 var defaults = {
+    /**
+     * 命令空间
+     * @type String
+     */
+    namespace: '',
+
     /**
      * 存储器，默认为内存，存储器必须支持以下实例方法
      * - `.get(key)`
@@ -61,7 +66,7 @@ var Cache = Events.extend({
         Cache.parent(the);
         the[_options] = options = object.assign(true, {}, defaults, options);
         the[_storage] = options.storage || memory;
-        the[_prefix] = namespace + (cacheId++) + '/';
+        the[_prefix] = namespace + options.namespace + '/';
         the[_rePrefix] = new RegExp('^' + string.escapeRegExp(the[_prefix]));
     },
 
