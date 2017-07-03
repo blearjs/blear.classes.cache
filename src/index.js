@@ -15,20 +15,7 @@ var typeis = require('blear.utils.typeis');
 var number = require('blear.utils.number');
 var string = require('blear.utils.string');
 
-var namespace = 'øclasses/cache:';
 var DATE_1970 = new Date(0);
-var memoryStorage = Object.create(null);
-var memory = {
-    get: function (key) {
-        return memoryStorage[key];
-    },
-    set: function (key, val) {
-        memoryStorage[key] = val;
-    },
-    remove: function (key) {
-        delete memoryStorage[key];
-    }
-};
 var defaults = {
     /**
      * 存储器，默认为内存，存储器必须支持以下实例方法
@@ -53,9 +40,8 @@ var Cache = Events.extend({
 
         Cache.parent(the);
         the[_options] = options = object.assign({}, defaults, options);
-        the[_storage] = options.storage || memory;
+        the[_storage] = options.storage || buildMemoryCache();
     },
-
 
     /**
      * 设置值
@@ -71,45 +57,6 @@ var Cache = Events.extend({
 
         return the;
     },
-
-
-    /**
-     * 确保有值
-     * @param key
-     * @param val
-     * @param [expires]
-     * @returns {Cache}
-     */
-    ensure: function (key, val, expires) {
-        var the = this;
-        var old = the[_getDataByKey](key);
-
-        if (old) {
-            return old.val;
-        }
-
-        return the.set(key, val, expires);
-    },
-
-
-    /**
-     * 如果有则替换值
-     * @param key
-     * @param val
-     * @param [expires]
-     * @returns {*}
-     */
-    replace: function (key, val, expires) {
-        var the = this;
-        var old = the[_getDataByKey](key);
-
-        if (!old) {
-            return null;
-        }
-
-        return the.set(key, val, expires);
-    },
-
 
     /**
      * 获取数据
@@ -127,34 +74,6 @@ var Cache = Events.extend({
         return data.val;
     },
 
-
-    /**
-     * 获取数据有效期
-     * @param key
-     * @returns {Date}
-     */
-    getExpires: function (key) {
-        var the = this;
-        var data = the[_getDataByKey](key);
-
-        if (!data) {
-            return DATE_1970;
-        }
-
-        return new Date(data.exp);
-    },
-
-
-    /**
-     * 判断是否有存储
-     * @param key
-     * @returns {boolean}
-     */
-    has: function (key) {
-        return this[_getKeys]().indexOf(key) > -1;
-    },
-
-
     /**
      * 删除数据
      * @param key
@@ -165,42 +84,17 @@ var Cache = Events.extend({
         return key;
     },
 
-
     /**
-     * 获取所有键
-     * @returns {Array}
+     * 销毁缓存
      */
-    keys: function () {
-        return this[_getKeys]();
-    },
-
-
-    /**
-     * 清空
-     * @returns {Cache}
-     */
-    clear: function () {
+    destroy: function () {
         var the = this;
-        var keys = the.keys();
 
-        the[_removeDataByKeys](keys);
-
-        return the;
-    },
-
-
-    /**
-     * 长度
-     * @override size
-     * @returns {Number}
-     */
-    size: function () {
-        return this.keys().length;
+        the[_storage].destroy();
     }
 });
 var _options = Cache.sole();
 var _storage = Cache.sole();
-var _rePrefix = Cache.sole();
 var _setKeyVal = Cache.sole();
 var _getDataByKey = Cache.sole();
 var _removeDataByKey = Cache.sole();
@@ -288,6 +182,27 @@ pro[_removeDataByKeys] = function (keys) {
 };
 
 
+/**
+ * 创建一个内存区域的缓存
+ * @returns {{get: get, set: set, remove: remove, destroy: destroy}}
+ */
+function buildMemoryCache() {
+    var memoryStorage = Object.create(null);
+    return {
+        get: function (key) {
+            return memoryStorage[key];
+        },
+        set: function (key, val) {
+            memoryStorage[key] = val;
+        },
+        remove: function (key) {
+            delete memoryStorage[key];
+        },
+        destroy: function () {
+            memoryStorage = null;
+        }
+    };
+}
 
 
 Cache.defaults = defaults;
