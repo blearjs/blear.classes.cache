@@ -14,7 +14,9 @@ var sessionStorage = require('blear.core.storage')(window.sessionStorage);
 
 describe('测试文件', function () {
     it('memory', function () {
-        var cache = new Cache();
+        var cache = new Cache({
+            namespace: 'test.'
+        });
         var key1 = 'myKey1';
         var key2 = 'myKey2';
         var val1 = {a:1, b:2};

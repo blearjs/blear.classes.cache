@@ -18,6 +18,12 @@ var string = require('blear.utils.string');
 var DATE_1970 = new Date(0);
 var defaults = {
     /**
+     * 命名空间
+     * @type String
+     */
+    namespace: '',
+
+    /**
      * 存储器，默认为内存，存储器必须支持以下实例方法
      * - `.get(key)`
      * - `.set(key, val, [exp])`
@@ -98,8 +104,6 @@ var _storage = Cache.sole();
 var _setKeyVal = Cache.sole();
 var _getDataByKey = Cache.sole();
 var _removeDataByKey = Cache.sole();
-var _removeDataByKeys = Cache.sole();
-var _getKeys = Cache.sole();
 var pro = Cache.prototype;
 
 
@@ -112,10 +116,11 @@ var pro = Cache.prototype;
 pro[_setKeyVal] = function (key, val, expires) {
     var the = this;
     var exp;
-
-    var options = object.assign(true, {}, the[_options], {
+    var options = object.assign({}, the[_options], {
         expires: expires
     });
+
+    key = options.namespace + key;
 
     if (typeis.Date(options.expires)) {
         exp = options.expires;
@@ -142,6 +147,7 @@ pro[_getDataByKey] = function (key) {
     var the = this;
     var data;
 
+    key = the[_options].namespace + key;
     data = the[_storage].get(key);
 
     if (!data) {
@@ -165,20 +171,8 @@ pro[_getDataByKey] = function (key) {
 pro[_removeDataByKey] = function (key) {
     var the = this;
 
+    key = the[_options].namespace + key;
     the[_storage].remove(key);
-};
-
-
-/**
- * 根据 keys 删除数据
- * @param keys
- * @returns {*}
- */
-pro[_removeDataByKeys] = function (keys) {
-    var the = this;
-    array.each(keys, function (index, key) {
-        the[_removeDataByKey](key);
-    });
 };
 
 
