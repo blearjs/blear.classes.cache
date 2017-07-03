@@ -52,7 +52,7 @@ var Cache = Events.extend({
         var the = this;
 
         Cache.parent(the);
-        the[_options] = options = object.assign(true, {}, defaults, options);
+        the[_options] = options = object.assign({}, defaults, options);
         the[_storage] = options.storage || memory;
     },
 
