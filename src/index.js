@@ -27,26 +27,14 @@ var memory = {
     },
     remove: function (key) {
         delete memoryStorage[key];
-    },
-    keys: function () {
-        return object.keys(memoryStorage);
     }
 };
 var defaults = {
     /**
-     * 命令空间
-     * @type String
-     */
-    namespace: '',
-
-    /**
      * 存储器，默认为内存，存储器必须支持以下实例方法
      * - `.get(key)`
-     * - `.set(key)`
+     * - `.set(key, val, [exp])`
      * - `.remove(key)`
-     * - `.clear(key)`
-     * - `.keys()`
-     * - `.size()`
      * @type Object
      */
     storage: null,
@@ -66,8 +54,6 @@ var Cache = Events.extend({
         Cache.parent(the);
         the[_options] = options = object.assign(true, {}, defaults, options);
         the[_storage] = options.storage || memory;
-        the[_prefix] = namespace + options.namespace + '/';
-        the[_rePrefix] = new RegExp('^' + string.escapeRegExp(the[_prefix]));
     },
 
 
@@ -214,7 +200,6 @@ var Cache = Events.extend({
 });
 var _options = Cache.sole();
 var _storage = Cache.sole();
-var _prefix = Cache.sole();
 var _rePrefix = Cache.sole();
 var _setKeyVal = Cache.sole();
 var _getDataByKey = Cache.sole();
@@ -249,9 +234,8 @@ pro[_setKeyVal] = function (key, val, expires) {
         val: val,
         exp: exp.getTime()
     };
-    var storageKey = the[_prefix] + key;
 
-    the[_storage].set(storageKey, data);
+    the[_storage].set(key, data);
 };
 
 
@@ -262,10 +246,9 @@ pro[_setKeyVal] = function (key, val, expires) {
  */
 pro[_getDataByKey] = function (key) {
     var the = this;
-    var storageKey = the[_prefix] + key;
     var data;
 
-    data = the[_storage].get(storageKey);
+    data = the[_storage].get(key);
 
     if (!data) {
         return null;
@@ -287,9 +270,8 @@ pro[_getDataByKey] = function (key) {
  */
 pro[_removeDataByKey] = function (key) {
     var the = this;
-    var storageKey = the[_prefix] + key;
 
-    the[_storage].remove(storageKey);
+    the[_storage].remove(key);
 };
 
 
@@ -306,21 +288,6 @@ pro[_removeDataByKeys] = function (keys) {
 };
 
 
-/**
- * 获取键
- */
-pro[_getKeys] = function () {
-    var the = this;
-    var keys = the[_storage].keys();
-
-    keys = array.filter(keys, function (key) {
-        return the[_rePrefix].test(key);
-    });
-
-    return array.map(keys, function (key) {
-        return key.replace(the[_rePrefix], '');
-    });
-};
 
 
 Cache.defaults = defaults;
