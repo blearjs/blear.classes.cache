@@ -14,6 +14,8 @@ var array = require('blear.utils.array');
 var typeis = require('blear.utils.typeis');
 var number = require('blear.utils.number');
 var string = require('blear.utils.string');
+var fun = require('blear.utils.function');
+var access = require('blear.utils.access');
 
 var DATE_1970 = new Date(0);
 var defaults = {
@@ -47,6 +49,7 @@ var Cache = Events.extend({
         Cache.parent(the);
         the[_options] = options = object.assign({}, defaults, options);
         the[_storage] = options.storage || buildMemoryCache();
+        the[_async] = options.async || the[_storage].get.length === 2;
     },
 
     /**
@@ -54,39 +57,95 @@ var Cache = Events.extend({
      * @param key
      * @param val
      * @param [expires]
+     * @param [callback]
      * @returns {Cache}
      */
-    set: function (key, val, expires) {
+    set: function (key, val, expires, callback) {
         var the = this;
+        var exp;
+        var args = access.args(arguments);
 
-        the[_setKeyVal](key, val, expires);
+        if(the[_async]) {
+            // #set(key, val, callback);
+            if(args.length === 3 && typeis.Function(args[2])) {
+                callback = args[2];
+                expires = null;
+            }
+        }
 
+        var options = object.assign({}, the[_options], {
+            expires: expires
+        });
+        key = options.namespace + key;
+
+        if (typeis.Date(options.expires)) {
+            exp = options.expires;
+        } else {
+            exp = new Date(new Date().getTime() + number.parseInt(options.expires, defaults.expires));
+        }
+
+        var data = {
+            key: key,
+            val: val,
+            exp: exp.getTime()
+        };
+
+        the[_storage].set(key, data, callback);
         return the;
     },
 
     /**
      * 获取数据
      * @param key
+     * @param [callback]
      * @returns {*}
      */
-    get: function (key) {
+    get: function (key, callback) {
         var the = this;
-        var data = the[_getDataByKey](key);
+        var options = the[_options];
+        var data;
+        callback = fun.ensure(callback);
+        key = options.namespace + key;
+        var cal = function (data) {
+            if (!data) {
+                return null;
+            }
 
-        if (!data) {
-            return data;
+            if (data.exp < new Date().getTime()) {
+                the[_removeDataByKey](key, callback);
+                return null;
+            }
+
+            if (!data) {
+                return data;
+            }
+
+            return data.val;
+        };
+
+        if (the[_async]) {
+            the[_storage].get(key, function (err, data) {
+                if (err) {
+                    return callback(err)
+                }
+
+                callback(null, cal(data));
+            });
+            return the;
         }
 
-        return data.val;
+        data = the[_storage].get(key);
+        return cal(data);
     },
 
     /**
      * 删除数据
      * @param key
+     * @param [callback]
      * @returns {*}
      */
-    remove: function (key) {
-        this[_removeDataByKey](key);
+    remove: function (key, callback) {
+        this[_removeDataByKey](key, callback);
         return key;
     },
 
@@ -100,6 +159,7 @@ var Cache = Events.extend({
     }
 });
 var _options = Cache.sole();
+var _async = Cache.sole();
 var _storage = Cache.sole();
 var _setKeyVal = Cache.sole();
 var _getDataByKey = Cache.sole();
@@ -166,13 +226,15 @@ pro[_getDataByKey] = function (key) {
 /**
  * 根据 key 删除数据
  * @param key
+ * @param callback
  * @returns {*}
  */
-pro[_removeDataByKey] = function (key) {
+pro[_removeDataByKey] = function (key, callback) {
     var the = this;
 
+    callback = fun.ensure(callback);
     key = the[_options].namespace + key;
-    the[_storage].remove(key);
+    the[_storage].remove(key, callback);
 };
 
 

@@ -1,6 +1,6 @@
 {
   "name": "blear.classes.cache",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "缓存管理类",
   "scripts": {
     "live": "browser-sync start --config bs-config.js",
@@ -36,16 +36,19 @@
     "url": "https://github.com/blearjs/blear.classes.cache/issues"
   },
   "dependencies": {
-    "blear.classes.events": "1.x",
-    "blear.utils.object": "1.x",
-    "blear.utils.array": "1.x",
-    "blear.utils.typeis": "1.x",
-    "blear.utils.number": "1.x",
-    "blear.utils.string": "1.x"
+    "blear.classes.events": "^1.0.7",
+    "blear.utils.access": "^1.0.5",
+    "blear.utils.array": "^1.0.12",
+    "blear.utils.function": "^1.0.5",
+    "blear.utils.number": "^1.0.3",
+    "blear.utils.object": "^1.0.14",
+    "blear.utils.string": "^1.0.9",
+    "blear.utils.typeis": "^1.0.3"
   },
   "peerDependencies": {},
   "devDependencies": {
     "blear.core.storage": "^1.0.1",
+    "blear.utils.plan": "^2.1.2",
     "jasmine-core": "^2.4.1",
     "karma": "^0.13.22",
     "karma-chrome-launcher": "^1.0.1",
