@@ -89,8 +89,7 @@ var Cache = Events.extend({
             val: val,
             exp: exp.getTime()
         };
-
-        the[_storage].set(key, data, callback);
+        the[_storage].set(key, data, exp, callback);
         return the;
     },
 

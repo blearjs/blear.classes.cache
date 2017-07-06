@@ -1,6 +1,6 @@
 {
   "name": "blear.classes.cache",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "缓存管理类",
   "scripts": {
     "live": "browser-sync start --config bs-config.js",
