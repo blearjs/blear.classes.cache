@@ -64,7 +64,7 @@ describe('测试文件', function () {
                         callback(null, storeage[key]);
                     });
                 },
-                set: function (key, val, callback) {
+                set: function (key, val, exp, callback) {
                     setTimeout(function () {
                         storeage[key] = val;
                         callback(null);
